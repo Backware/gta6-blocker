@@ -1,0 +1,35 @@
+/* Elements the content script decided to hide. */
+[data-gta6-blocked] {
+  display: none !important;
+}
+
+/* While a whole page is blocked, stop it from scrolling behind the overlay. */
+html[data-gta6-page-blocked],
+html[data-gta6-page-blocked] body {
+  overflow: hidden !important;
+}
+
+/* Videos in swipe feeds (YouTube Shorts, Reels, TikTok): cover and mute
+   instead of removing, so you can keep scrolling past them. */
+[data-gta6-covered] {
+  position: relative !important;
+}
+[data-gta6-covered] > * {
+  visibility: hidden !important;
+}
+[data-gta6-covered]::after {
+  content: "GTA content blocked \2014  keep scrolling";
+  position: absolute;
+  inset: 0;
+  z-index: 2147483646;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background: #0f0f14;
+  color: #f2f2f5;
+  border-radius: inherit;
+  font: 600 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  visibility: visible !important;
+}

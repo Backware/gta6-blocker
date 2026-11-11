@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GTA 6 Blocker</title>
+  <link rel="stylesheet" href="../ui.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="../icons/icon-48.png" alt="" width="32" height="32">
+    <h1>GTA 6 Blocker</h1>
+  </header>
+
+  <label class="row switch-row">
+    <span>Blocking</span>
+    <input type="checkbox" id="enabled" class="switch">
+  </label>
+
+  <section class="stats">
+    <div><strong id="tabCount">0</strong><span>hidden on this page</span></div>
+    <div><strong id="total">0</strong><span>hidden in total</span></div>
+  </section>
+
+  <label class="row switch-row" id="siteRow">
+    <span>Block on <b id="host">this site</b></span>
+    <input type="checkbox" id="siteEnabled" class="switch">
+  </label>
+
+  <footer>
+    <button type="button" id="options">Edit keywords &amp; settings</button>
+  </footer>
+  <script src="../shared.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

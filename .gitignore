@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+dist/
+*.zip
+
+# Xcode / Safari
+*.xcuserstate
+xcuserdata/
+DerivedData/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

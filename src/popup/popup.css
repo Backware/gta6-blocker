@@ -1,0 +1,11 @@
+body { width: 300px; padding: 16px; }
+header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+header h1 { font-size: 17px; margin: 0; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 10px; }
+.stats div { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+.stats strong { display: block; font-size: 22px; }
+.stats span { color: var(--muted); font-size: 12px; }
+#host { word-break: break-all; }
+footer { margin-top: 10px; }
+footer button { width: 100%; }

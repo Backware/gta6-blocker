@@ -1,0 +1,32 @@
+{
+  "name": "gta6-blocker",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Browser extension that blocks GTA 6 / Grand Theft Auto VI content in Chrome and Safari.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node test/run-test.js",
+    "package:chrome": "sh scripts/package-chrome.sh",
+    "build:safari": "sh scripts/build-safari.sh",
+    "screenshots": "node docs/demo/take-screenshots.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  },
+  "keywords": [
+    "browser-extension",
+    "chrome-extension",
+    "safari-extension",
+    "manifest-v3",
+    "gta6",
+    "gta-6",
+    "grand-theft-auto",
+    "spoiler-blocker",
+    "content-blocker",
+    "spoilers",
+    "youtube",
+    "privacy"
+  ],
+  "homepage": "https://backware.cc",
+  "author": "Backware (https://backware.cc)"
+}

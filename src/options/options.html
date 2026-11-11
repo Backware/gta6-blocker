@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GTA 6 Blocker settings</title>
+  <link rel="stylesheet" href="../ui.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header>
+      <img src="../icons/icon-48.png" alt="" width="40" height="40">
+      <h1>GTA 6 Blocker settings</h1>
+    </header>
+
+    <section>
+      <label class="row"><span><b>Blocking enabled</b><br><small>Master switch for everything below.</small></span>
+        <input type="checkbox" id="enabled" class="switch"></label>
+      <label class="row"><span><b>Block GTA pages and searches before they load</b><br>
+        <small>Redirects GTA searches, GTA hashtag pages, rockstargames.com/VI and GTA fan sites to a block screen.</small></span>
+        <input type="checkbox" id="networkBlocking" class="switch"></label>
+    </section>
+
+    <section>
+      <h2>Keywords</h2>
+      <p class="hint">One per line, not case sensitive. Spaces also match dashes, dots and no space at all, so <code>GTA 6</code> catches "GTA-6" and "gta6". Hashtags match by prefix, so <code>GTA</code> also catches #gtaonline.</p>
+      <textarea id="keywords" rows="12" spellcheck="false"></textarea>
+    </section>
+
+    <section>
+      <h2>Allowed sites</h2>
+      <p class="hint">One domain per line (for example <code>example.com</code>). Nothing is blocked on these sites or their subdomains.</p>
+      <textarea id="allowlist" rows="5" spellcheck="false"></textarea>
+    </section>
+
+    <div class="actions">
+      <button type="button" id="reset">Reset keywords to defaults</button>
+      <span id="status" role="status"></span>
+      <button type="button" class="primary" id="save">Save</button>
+    </div>
+  </main>
+  <script src="../shared.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

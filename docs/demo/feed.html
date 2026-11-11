@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Demo feed</title>
+<!-- Mock page used to make the README screenshots (docs/screenshots). -->
+<style>
+  body { margin: 0; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f0f0f; color: #f1f1f1; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid #272727; }
+  .logo { font-weight: 800; font-size: 18px; }
+  .search { flex: 1; max-width: 520px; padding: 8px 14px; border-radius: 20px; border: 1px solid #303030; background: #121212; color: #aaa; }
+  main { padding: 20px 24px; }
+  h2 { font-size: 16px; margin: 0 0 12px; color: #ddd; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  ytd-rich-item-renderer { display: block; }
+  .thumb { aspect-ratio: 16/9; border-radius: 12px; display: flex; align-items: flex-end; justify-content: flex-end; padding: 6px; box-sizing: border-box; }
+  .dur { background: rgba(0,0,0,.8); font-size: 12px; padding: 1px 5px; border-radius: 4px; }
+  .title { font-weight: 600; margin: 8px 0 2px; }
+  .meta { color: #aaa; font-size: 12px; }
+  .posts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  article { background: #181818; border: 1px solid #272727; border-radius: 12px; padding: 14px; }
+  article .who { font-weight: 600; margin-bottom: 6px; }
+  .tag { color: #6ea8ff; }
+</style>
+</head>
+<body>
+<header><span class="logo">▶ DemoTube</span><div class="search">Search</div></header>
+<main>
+  <h2>Recommended</h2>
+  <div class="grid">
+    <ytd-rich-item-renderer><div class="thumb" style="background:linear-gradient(135deg,#ff7a59,#ffb36b)"><span class="dur">12:04</span></div><div class="title">GTA 6 Trailer 3 – Full Breakdown</div><div class="meta">GameNews · 2.1M views</div></ytd-rich-item-renderer>
+    <ytd-rich-item-renderer><div class="thumb" style="background:linear-gradient(135deg,#2f80ed,#56ccf2)"><span class="dur">8:31</span></div><div class="title">Building a cozy cabin in Minecraft</div><div class="meta">BlockCraft · 840K views</div></ytd-rich-item-renderer>
+    <ytd-rich-item-renderer><div class="thumb" style="background:linear-gradient(135deg,#ff4fa3,#7b2ff7)"><span class="dur">22:15</span></div><div class="title">Every Vice City Easter Egg Explained</div><div class="meta">RetroGamer · 1.3M views</div></ytd-rich-item-renderer>
+    <ytd-rich-item-renderer><div class="thumb" style="background:linear-gradient(135deg,#27ae60,#a8e063)"><span class="dur">15:47</span></div><div class="title">Zelda: 10 hidden secrets</div><div class="meta">Hyrule Daily · 512K views</div></ytd-rich-item-renderer>
+    <ytd-rich-item-renderer><div class="thumb" style="background:linear-gradient(135deg,#f2c94c,#f2994a)"><span class="dur">5:02</span></div><div class="title">Speedrun world record reaction</div><div class="meta">SpeedFans · 220K views</div></ytd-rich-item-renderer>
+    <ytd-rich-item-renderer><div class="thumb" style="background:linear-gradient(135deg,#eb5757,#9b51e0)"><span class="dur">18:20</span></div><div class="title">Grand Theft Auto VI map size compared</div><div class="meta">MapNerd · 3.4M views</div></ytd-rich-item-renderer>
+    <ytd-rich-item-renderer><div class="thumb" style="background:linear-gradient(135deg,#56ccf2,#6fcf97)"><span class="dur">11:11</span></div><div class="title">Best indie games of the year</div><div class="meta">IndieWorld · 96K views</div></ytd-rich-item-renderer>
+    <ytd-rich-item-renderer><div class="thumb" style="background:linear-gradient(135deg,#bb6bd9,#f78fb3)"><span class="dur">9:58</span></div><div class="title">Cooking ramen like a pro</div><div class="meta">Kitchen Lab · 1.1M views</div></ytd-rich-item-renderer>
+  </div>
+  <h2>Posts</h2>
+  <div class="posts">
+    <article><div class="who">@sunset.drives</div>Night cruise through the city 🌴 <span class="tag">#gtaonline #vicecityvibes</span></article>
+    <article><div class="who">@trailrunner</div>Morning run done, 12 km in the mountains ⛰️ <span class="tag">#running</span></article>
+    <article><div class="who">@leaks_daily</div>New Lucia & Jason screenshots just dropped 👀 <span class="tag">#GTA6</span></article>
+  </div>
+</main>
+</body>
+</html>
