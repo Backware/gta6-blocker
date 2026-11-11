@@ -147,6 +147,9 @@ Safari only keeps an extension enabled across restarts when its app is signed wi
 4. Pick the **GTA 6 Blocker** scheme and **My Mac** at the top, then press **⌘R**.
 5. In **Safari → Settings → Extensions**, enable **GTA 6 Blocker**. You don't need *Allow unsigned extensions* any more.
 
+> [!TIP]
+> **Error "Embedded binary is not signed with the same certificate as the parent app"?** The app and the extension must use the *same* team. Check **Signing & Capabilities** on *both* targets (**GTA 6 Blocker** and **GTA 6 Blocker Extension**), pick the identical team on each, then **Product → Clean Build Folder** (⇧⌘K) and build again.
+
 Tip: if you know your team ID (shown in Xcode under Accounts or on developer.apple.com), `DEVELOPMENT_TEAM=ABCDE12345 bash scripts/build-safari.sh` does steps 2 to 4 in one go.
 
 ### C. Share it as a download (Developer ID)
