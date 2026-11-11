@@ -118,6 +118,47 @@ const server = http.createServer((req, res) => {
   check('github: leaving the repo via SPA navigation blocks again', await isBlocked());
   await page.unrouteAll();
 
+  // Twitch: GTA streams (any GTA category) are hidden from the sidebar and
+  // directory, and a channel page streaming GTA is blocked.
+  await page.route('https://www.twitch.tv/**', (route) => {
+    const file = new URL(route.request().url()).pathname.startsWith('/directory') ? 'twitch-directory.html' : 'twitch-channel.html';
+    route.fulfill({ contentType: 'text/html', body: fs.readFileSync(path.join(__dirname, file)) });
+  });
+  await page.goto('https://www.twitch.tv/directory/all');
+  await page.waitForTimeout(800);
+  check('twitch: directory page not blocked', !(await isBlocked()));
+  const twHidden = (id) => page.$eval('#' + id, (el) => !!el.closest('[data-gta6-blocked]'));
+  for (const id of ['sn1', 'sn2', 'c1', 'c2', 'c3', 'g1']) check('twitch: hides ' + id, await twHidden(id));
+  for (const id of ['sn3', 'c4', 'g2']) check('twitch: keeps ' + id, !(await twHidden(id)));
+  check('twitch: hides whole grid cell', await page.$eval('#c2', (el) => el.hasAttribute('data-gta6-blocked')));
+  check('twitch: hides whole sidebar entry', await page.$eval('#sn2', (el) => el.hasAttribute('data-gta6-blocked')));
+
+  await page.goto('https://www.twitch.tv/retrogamer');
+  await page.waitForTimeout(1000);
+  check('twitch: GTA IV stream page blocked', await isBlocked());
+  await page.goto('https://www.twitch.tv/rpstreamer');
+  await page.waitForTimeout(1000);
+  check('twitch: GTA V stream page blocked', await isBlocked());
+  await page.goto('https://www.twitch.tv/blockbuilder');
+  await page.waitForTimeout(1000);
+  check('twitch: Minecraft stream page not blocked', !(await isBlocked()));
+  // Streamer switches to GTA mid-stream, then away again.
+  await page.evaluate(() => {
+    const a = document.querySelector('[data-a-target="stream-game-link"]');
+    a.textContent = 'Grand Theft Auto VI';
+    a.href = '/directory/category/grand-theft-auto-vi';
+  });
+  await page.waitForTimeout(800);
+  check('twitch: switching to GTA mid-stream blocks', await isBlocked());
+  await page.evaluate(() => {
+    const a = document.querySelector('[data-a-target="stream-game-link"]');
+    a.textContent = 'Minecraft';
+    a.href = '/directory/category/minecraft';
+  });
+  await page.waitForTimeout(800);
+  check('twitch: switching away from GTA unblocks', !(await isBlocked()));
+  await page.unrouteAll();
+
   // Turn off and confirm content comes back.
   await sw.evaluate(() => chrome.storage.local.set({ enabled: false }));
   await page.waitForTimeout(300);
