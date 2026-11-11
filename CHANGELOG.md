@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0 (2026-11-11)
+
+- The extension's own GitHub repository is never blocked (hardcoded): pages, issues, raw files, zip and release downloads.
+- Twitch: streams in any Grand Theft Auto category are hidden from the sidebar, front page and directory, and channel pages streaming GTA are blocked, including when a streamer switches to GTA mid-stream.
+
 ## 1.1.0 (2026-11-11)
 
 - README: screenshots, "how it works", AI-generated notice and a full guide to signing for Safari (free Apple ID, Developer ID, App Store).
