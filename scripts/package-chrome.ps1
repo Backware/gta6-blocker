@@ -6,5 +6,5 @@ $dist = Join-Path $root "dist"
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 $out = Join-Path $dist ("gta6-blocker-chrome-" + $manifest.version + ".zip")
 if (Test-Path $out) { Remove-Item $out }
-Compress-Archive -Path (Join-Path $root "src\*") -DestinationPath $out
+Get-ChildItem (Join-Path $root "src") -Exclude "_metadata" | Compress-Archive -DestinationPath $out
 Write-Host "Created $out"

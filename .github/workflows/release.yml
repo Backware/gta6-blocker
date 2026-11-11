@@ -1,0 +1,91 @@
+# Creates a GitHub release automatically whenever a new version lands on main.
+#
+# How to release: bump "version" in src/manifest.json and package.json, add a
+# "## <version> (<date>)" section to CHANGELOG.md, merge to main. This
+# workflow then runs the tests, builds the Chrome zip and publishes the
+# release "v<version>" with that changelog section as release notes.
+# If the tag already exists nothing happens, so other pushes to main are safe.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./src/manifest.json').version")
+          PKG=$(node -p "require('./package.json').version")
+          if [ "$VERSION" != "$PKG" ]; then
+            echo "::error::src/manifest.json ($VERSION) and package.json ($PKG) have different versions"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
+            echo "v$VERSION is already released, nothing to do."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.version.outputs.release == 'true'
+        with:
+          node-version: 22
+
+      - name: Run tests
+        if: steps.version.outputs.release == 'true'
+        run: |
+          npm install --no-save --no-audit --no-fund
+          npx playwright install chromium
+          npm test
+
+      - name: Build Chrome zip
+        if: steps.version.outputs.release == 'true'
+        run: sh scripts/package-chrome.sh
+
+      - name: Release notes from CHANGELOG.md
+        if: steps.version.outputs.release == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          awk -v v="$VERSION" '
+            /^## / { if (found) exit; if (index($0, "## " v " ") == 1 || $0 == "## " v) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "::warning::No CHANGELOG.md section for $VERSION, using a default text"
+            echo "GTA 6 Blocker $VERSION" > notes.md
+          fi
+          cat >> notes.md <<'EOF'
+
+          ### Install
+          - **Chrome / Edge / Brave:** download the zip below, unzip it, open `chrome://extensions`, turn on Developer mode and click **Load unpacked**.
+          - **Safari:** build it on a Mac with `Build Safari Extension.command` (see the README).
+          EOF
+          cat notes.md
+
+      - name: Publish release
+        if: steps.version.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v$VERSION" "dist/gta6-blocker-chrome-$VERSION.zip" \
+            --target "$GITHUB_SHA" \
+            --title "GTA 6 Blocker $VERSION" \
+            --notes-file notes.md
