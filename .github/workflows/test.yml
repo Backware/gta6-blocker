@@ -1,0 +1,22 @@
+# Runs the extension tests on every pull request, so a broken change is
+# caught before it is merged (and before the release workflow picks it up).
+name: Test
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm test

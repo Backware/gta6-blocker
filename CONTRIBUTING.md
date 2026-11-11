@@ -24,6 +24,18 @@ There is no bundler or build step on purpose: the code in `src/` is exactly what
 - Keep it dependency-free and compatible with both browsers: use the `ext` handle from `shared.js` (works as `browser` in Safari and `chrome` in Chromium), and only Manifest V3 APIs Safari supports.
 - No analytics, remote code or network requests. Privacy is a feature.
 
+## Releasing
+
+Releases are created automatically by `.github/workflows/release.yml`:
+
+1. Bump `version` in `src/manifest.json` **and** `package.json` (they must match).
+2. Add a `## <version> (<date>)` section at the top of `CHANGELOG.md`.
+3. Merge to `main`.
+
+The workflow runs the tests, builds `gta6-blocker-chrome-<version>.zip` and publishes the GitHub release `v<version>` with the changelog section as notes. Pushes that don't change the version do nothing. Pull requests run the tests via `.github/workflows/test.yml`.
+
+The Safari app is not built in CI, because it has to be signed on a Mac. Build it locally and attach it to the release if you want to ship it.
+
 ## Code style
 
 - Plain modern JavaScript, 2-space indent, single quotes, semicolons.
