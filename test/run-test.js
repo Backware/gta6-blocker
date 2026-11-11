@@ -118,12 +118,15 @@ const server = http.createServer((req, res) => {
   check('github: leaving the repo via SPA navigation blocks again', await isBlocked());
   await page.unrouteAll();
 
-  // Twitch: GTA streams (any GTA category) are hidden from the sidebar and
-  // directory, and a channel page streaming GTA is blocked.
+  // Twitch, "remove completely" mode: GTA streams (any GTA category) are
+  // hidden from the sidebar and directory, and a channel page streaming GTA
+  // is blocked.
   await page.route('https://www.twitch.tv/**', (route) => {
     const file = new URL(route.request().url()).pathname.startsWith('/directory') ? 'twitch-directory.html' : 'twitch-channel.html';
     route.fulfill({ contentType: 'text/html', body: fs.readFileSync(path.join(__dirname, file)) });
   });
+  check('twitch: default mode is warn', (await sw.evaluate(() => globalThis.GTA6.getSettings())).twitchMode === 'warn');
+  await sw.evaluate(() => chrome.storage.local.set({ twitchMode: 'hide' }));
   await page.goto('https://www.twitch.tv/directory/all');
   await page.waitForTimeout(800);
   check('twitch: directory page not blocked', !(await isBlocked()));
@@ -157,7 +160,55 @@ const server = http.createServer((req, res) => {
   });
   await page.waitForTimeout(800);
   check('twitch: switching away from GTA unblocks', !(await isBlocked()));
+
+  // Twitch, default "mark red and warn" mode.
+  await sw.evaluate(() => chrome.storage.local.set({ twitchMode: 'warn' }));
+  const warning = () => page.evaluate(() => !!document.querySelector('gta6-twitch-warning'));
+  const redFrame = () => page.evaluate(() => document.documentElement.hasAttribute('data-gta6-gta-stream'));
+  const flagged = (id) => page.$eval('#' + id, (el) => !!el.closest('[data-gta6-flagged]'));
+  await page.goto('https://www.twitch.tv/directory/all');
+  await page.waitForTimeout(800);
+  for (const id of ['sn1', 'sn2', 'c1', 'c2', 'c3', 'g1']) {
+    check('twitch warn: marks ' + id + ' red', await flagged(id));
+    check('twitch warn: does not hide ' + id, !(await twHidden(id)));
+  }
+  for (const id of ['sn3', 'c4', 'g2']) check('twitch warn: leaves ' + id + ' unmarked', !(await flagged(id)));
+  // Clicking a red stream warns before the stream is opened.
+  await page.click('#c2 a[href="/retrogamer"]');
+  await page.waitForTimeout(500);
+  check('twitch warn: click on red stream shows warning first', await warning());
+  check('twitch warn: stream not opened yet', page.url().endsWith('/directory/all'));
+  await page.click('#gta6-back');
+  await page.waitForTimeout(300);
+  check('twitch warn: "Go back" stays on the list', !(await warning()) && page.url().endsWith('/directory/all'));
+  await page.click('#c2 a[href="/retrogamer"]');
+  await page.waitForTimeout(300);
+  await Promise.all([page.waitForURL('**/retrogamer'), page.click('#gta6-continue')]);
+  await page.waitForTimeout(1000);
+  check('twitch warn: "Watch anyway" opens the stream without a second warning', !(await warning()));
+  check('twitch warn: stream shown with red frame', await redFrame());
+  check('twitch warn: stream page not blocked', !(await isBlocked()));
+  // Opening a GTA stream directly: warning in front of the paused player.
+  await page.goto('https://www.twitch.tv/rpstreamer');
+  await page.waitForTimeout(1000);
+  check('twitch warn: direct visit shows warning', await warning());
+  check('twitch warn: direct visit red frame', await redFrame());
+  await page.click('#gta6-continue');
+  await page.waitForTimeout(300);
+  check('twitch warn: "Watch anyway" removes warning', !(await warning()));
+  await page.goto('https://www.twitch.tv/blockbuilder');
+  await page.waitForTimeout(1000);
+  check('twitch warn: non-GTA stream has no warning or frame', !(await warning()) && !(await redFrame()));
   await page.unrouteAll();
+
+  // Settings page: the Twitch choice is saved.
+  await page.goto('chrome-extension://' + new URL(sw.url()).host + '/options/options.html');
+  await page.waitForTimeout(300);
+  check('options: warn selected by default', await page.isChecked('input[name="twitchMode"][value="warn"]'));
+  await page.check('input[name="twitchMode"][value="hide"]');
+  await page.waitForTimeout(300);
+  check('options: "remove completely" saved', (await sw.evaluate(() => chrome.storage.local.get('twitchMode'))).twitchMode === 'hide');
+  await sw.evaluate(() => chrome.storage.local.set({ twitchMode: 'warn' }));
 
   // Turn off and confirm content comes back.
   await sw.evaluate(() => chrome.storage.local.set({ enabled: false }));
