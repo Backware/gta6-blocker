@@ -60,7 +60,8 @@ Everything runs locally in your browser. No tracking, no analytics, no remote co
 | **Whole pages** | Pages whose URL, title or `og:title` mention GTA 6 are covered by a block screen and their videos are paused. |
 | **Before they load** | Any GTA search (`gta 6`, `grand theft auto v`, `vice city`, `#gtaonline`...) on Google, Bing, DuckDuckGo, YouTube, Instagram, X etc., GTA hashtag pages, `rockstargames.com/VI` and other GTA pages on Rockstar's site, GTA fan sites (GTAForums, GTABase, the GTA wiki...) and embedded GTA iframes are stopped at the network level. |
 | **Search results** | Google, Bing, DuckDuckGo, Brave, Ecosia, Yahoo result cards. |
-| **Videos** | YouTube home, search, sidebar, Shorts shelves, comments and community posts; Twitch and TikTok cards. |
+| **Videos** | YouTube home, search, sidebar, Shorts shelves, comments and community posts; TikTok cards. |
+| **Twitch** | Streams in any Grand Theft Auto category (GTA VI, V, IV, San Andreas, Vice City...) are hidden from the sidebar, front page and directory, and a channel page streaming GTA is blocked. If a streamer switches to GTA mid-stream, the stream is blocked right away. |
 | **Swipe feeds** | In the YouTube Shorts player, Instagram Reels, TikTok and Facebook Reels, a GTA video is covered with a block screen and muted, and you can keep scrolling to the next one. |
 | **Social posts** | Reddit, X/Twitter, Bluesky, Mastodon, Facebook and Instagram posts, captions, hashtags, grid tiles and comments. |
 | **Everything else** | Any element on any site whose text, link, image `alt`, `title` or `aria-label` matches a keyword, including content loaded later by infinite scroll. |
@@ -79,6 +80,7 @@ Default keywords: `GTA`, `GTA 6`, `GTA VI`, `GTA 5`, `GTA V`, `GTA Online`, `Gra
 - "Block on this site" switch to allow a site
 - Badge counter showing how many items were hidden on the current tab
 - Editable keyword list and allowlist in the settings page
+- This project's own GitHub repository (`github.com/Backware/gta6-blocker`, raw files, zip and release downloads) is never blocked, so you can always read the docs, report issues and update
 - No tracking, no network calls, no remote code. Settings stay in your browser.
 
 ## Install

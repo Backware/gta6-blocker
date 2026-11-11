@@ -13,7 +13,7 @@
   if (window.__gta6BlockerLoaded) return;
   window.__gta6BlockerLoaded = true;
 
-  const { ext, buildMatcher, isAllowlisted, getSettings } = globalThis.GTA6;
+  const { ext, buildMatcher, isAllowlisted, isProjectUrl, getSettings } = globalThis.GTA6;
   const isTopFrame = window.top === window;
 
   // Site-specific "cards": when a match is found inside one of these, the
@@ -46,8 +46,10 @@
     // TikTok
     'div[data-e2e="recommend-list-item-container"]', 'div[data-e2e="search_top-item"]',
     'div[data-e2e="user-post-item"]',
-    // Twitch
+    // Twitch: stream/category cards, sidebar channels, search suggestions
     'div[data-a-target="card"]', 'article[data-a-target]', 'div.tw-tower > div',
+    'div.side-nav-card', '[data-test-selector="side-nav-card"]', '[data-a-target^="tw-box-art-card"]',
+    'div.game-card', 'div.shelf-card__impression-wrapper',
     // Steam / stores / generic news
     'a.search_result_row', 'div.tab_item', 'li.c-entry-box', 'div.c-entry-box',
     // Generic
@@ -72,6 +74,44 @@
       (/(^|\.)facebook\.com$/.test(h) && /^\/(reel|watch)/.test(p));
   }
 
+  // ---------- Twitch ----------
+  // Twitch shows the game ("category") a channel is streaming on its channel
+  // page, on every stream card and in the sidebar. All Grand Theft Auto
+  // categories (GTA VI, GTA V, GTA IV, San Andreas, Vice City, The Trilogy,
+  // ...) are named "Grand Theft Auto ..." and live under
+  // /directory/category/grand-theft-auto-..., so the normal keywords catch
+  // them. On top of that, a channel page whose live stream is in a GTA
+  // category (or whose stream title is about GTA) is blocked as a whole.
+  const TWITCH_STREAM_INFO = [
+    'a[data-a-target="stream-game-link"]',
+    '[data-a-target="player-info-game-name"]',
+    '[data-a-target="stream-title"]',
+    '#live-channel-stream-information a[href*="/directory/category/"]',
+    '#live-channel-stream-information a[href*="/directory/game/"]',
+    '.channel-info-content a[href*="/directory/category/"]',
+    '.channel-info-content a[href*="/directory/game/"]'
+  ].join(',');
+  // On Twitch the card matched above is often an <article> inside a grid
+  // cell; hide the whole cell so no empty gap is left behind.
+  const TWITCH_OUTER_CARD = 'div.tw-tower > div, div[data-target="directory-first-item"], div.side-nav-card';
+
+  function isTwitch() {
+    return /(^|\.)twitch\.tv$/.test(location.hostname);
+  }
+
+  /** On a Twitch channel page: is the live stream in a GTA category? */
+  function twitchStreamIsGta() {
+    if (!isTwitch()) return false;
+    // Only channel and video pages; the front page and directory list many
+    // streams, where only the GTA cards are hidden.
+    if (/^\/(directory|search|settings|downloads|subscriptions|drops|inventory|wallet|prime|turbo|jobs|p)?(\/|$)/i.test(location.pathname)) return false;
+    for (const el of document.querySelectorAll(TWITCH_STREAM_INFO)) {
+      if (matches(el.textContent) || matches(el.getAttribute('title')) || matches(el.getAttribute('aria-label'))) return true;
+      if (el.hasAttribute('href') && urlMatches(el.getAttribute('href'))) return true;
+    }
+    return false;
+  }
+
   // Never hide these (or walk above them).
   const NEVER_HIDE = new Set(['HTML', 'BODY', 'HEAD', 'MAIN']);
   const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT', 'SELECT', 'OPTION', 'TEMPLATE', 'SVG', 'CODE']);
@@ -79,6 +119,9 @@
 
   let matcher = null;
   let enabled = false;
+  // True on the extension's own GitHub repo, which is never blocked (see
+  // isProjectUrl in shared.js). Re-checked on every SPA navigation.
+  let exempt = false;
   let blockedCount = 0;
   let pageBlocked = false;
   let overlayHost = null;
@@ -129,7 +172,10 @@
     if (isEditable(el)) return null;
 
     const card = el.closest(CARD_SELECTORS);
-    if (card && !NEVER_HIDE.has(card.tagName)) return card;
+    if (card && !NEVER_HIDE.has(card.tagName)) {
+      const outer = isTwitch() && card.closest(TWITCH_OUTER_CARD);
+      return outer || card;
+    }
 
     // Fallback: climb to a reasonable block-level ancestor, but never so far
     // that we'd hide most of the page.
@@ -261,7 +307,7 @@
   }
 
   function scan(root) {
-    if (!enabled || pageBlocked || !matcher) return;
+    if (!enabled || exempt || pageBlocked || !matcher) return;
     scanText(root);
     scanAttributes(root);
     // Open shadow roots (Reddit, some YouTube parts).
@@ -283,6 +329,7 @@
     if (urlMatches(location.href)) return true;
     // Swipe feeds change the title per video; items are covered one by one instead.
     if (isSnapFeed()) return false;
+    if (twitchStreamIsGta()) return true;
     if (matches(document.title)) return true;
     const og = document.querySelector('meta[property="og:title"], meta[name="twitter:title"]');
     if (og && matches(og.getAttribute('content'))) return true;
@@ -298,6 +345,7 @@
   let mediaTimer = null;
   function blockPage() {
     if (pageBlocked) return;
+    const isStream = twitchStreamIsGta();
     pageBlocked = true;
     document.documentElement.setAttribute('data-gta6-page-blocked', '');
     if (!isTopFrame) {
@@ -328,8 +376,10 @@
       <div class="wrap" role="alert">
         <div class="card">
           <img src="${iconUrl}" alt="">
-          <h1>GTA content blocked</h1>
-          <p>This page is about GTA, so GTA 6 Blocker hid it to keep you spoiler free.</p>
+          <h1>${isStream ? 'GTA stream blocked' : 'GTA content blocked'}</h1>
+          <p>${isStream
+            ? 'This stream is playing Grand Theft Auto, so GTA 6 Blocker hid it to keep you spoiler free.'
+            : 'This page is about GTA, so GTA 6 Blocker hid it to keep you spoiler free.'}</p>
           <button type="button" id="back">Go back</button>
         </div>
       </div>`;
@@ -360,10 +410,29 @@
 
   function checkPage() {
     if (!enabled) return;
+    if (exempt) {
+      if (pageBlocked) unblockPage();
+      return;
+    }
     if (pageShouldBlock()) blockPage();
     else if (pageBlocked) {
       unblockPage();
       scan(document.documentElement);
+    }
+  }
+
+  /** Entering the project's repo: show everything. Leaving it: scan again. */
+  function updateExempt() {
+    const now = isProjectUrl(location.href);
+    if (now === exempt) return;
+    exempt = now;
+    if (exempt) {
+      clearMarks();
+      unblockPage();
+      blockedCount = 0;
+      reportCount();
+    } else {
+      pendingRoots.add(document.documentElement);
     }
   }
 
@@ -386,6 +455,11 @@
     if (location.href !== lastUrl || document.title !== lastTitle) {
       lastUrl = location.href;
       lastTitle = document.title;
+      updateExempt();
+      checkPage();
+    } else if (isTwitch()) {
+      // Twitch loads the stream's category after the page, and a streamer can
+      // switch games mid-stream: re-check on every change.
       checkPage();
     }
     if (pageBlocked) { pendingRoots.clear(); return; }
@@ -444,6 +518,7 @@
     const allowed = isAllowlisted(location.hostname, s.allowlist);
     const wasEnabled = enabled;
     enabled = !!s.enabled && !allowed;
+    exempt = isProjectUrl(location.href);
     matcher = buildMatcher(s.keywords);
 
     if (!enabled) {
