@@ -23,6 +23,15 @@
     </section>
 
     <section>
+      <h2>Twitch</h2>
+      <p class="hint">What to do with streams playing Grand Theft Auto (any GTA category).</p>
+      <label class="choice"><input type="radio" name="twitchMode" value="warn">
+        <span><b>Mark red and warn</b><br><small>GTA streams stay in lists but are marked red. Opening one shows a warning first; you can go back or watch anyway.</small></span></label>
+      <label class="choice"><input type="radio" name="twitchMode" value="hide">
+        <span><b>Remove completely</b><br><small>GTA streams are removed from the sidebar, front page and directory, and GTA stream pages are blocked.</small></span></label>
+    </section>
+
+    <section>
       <h2>Keywords</h2>
       <p class="hint">One per line, not case sensitive. Spaces also match dashes, dots and no space at all, so <code>GTA 6</code> catches "GTA-6" and "gta6". Hashtags match by prefix, so <code>GTA</code> also catches #gtaonline.</p>
       <textarea id="keywords" rows="12" spellcheck="false"></textarea>
