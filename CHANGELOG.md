@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0 (2026-11-11)
+
+- Twitch: GTA streams are now marked red instead of hidden, and opening one shows a warning before the stream plays ("Go back" or "Watch anyway"). After "Watch anyway" the stream keeps a red frame.
+- New setting "Twitch": mark red and warn (default) or remove GTA streams completely (previous behaviour).
+
 ## 1.2.0 (2026-11-11)
 
 - The extension's own GitHub repository is never blocked (hardcoded): pages, issues, raw files, zip and release downloads.

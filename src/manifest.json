@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "GTA 6 Blocker",
   "short_name": "GTA6 Blocker",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Blocks pages, searches, videos, Shorts, Reels and posts about GTA 6 and Grand Theft Auto. Spoiler- and hype-free browsing.",
   "icons": {
     "16": "icons/icon-16.png",
