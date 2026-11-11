@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -45,13 +45,13 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.version.outputs.release == 'true'
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Run tests
         if: steps.version.outputs.release == 'true'
         run: |
           npm install --no-save --no-audit --no-fund
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
           npm test
 
       - name: Build Chrome zip
