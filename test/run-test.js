@@ -76,6 +76,48 @@ const server = http.createServer((req, res) => {
   await page.waitForTimeout(500);
   check('redirects rockstargames.com/VI', page.url().endsWith('/blocked/blocked.html'));
 
+  // The extension's own GitHub repo is never blocked (hardcoded exception).
+  const urls = {
+    'https://github.com/Backware/gta6-blocker': true,
+    'https://github.com/backware/GTA6-Blocker/issues/1': true,
+    'https://github.com/Backware/gta6-blocker.git': true,
+    'https://www.github.com/Backware/gta6-blocker/releases': true,
+    'https://raw.githubusercontent.com/Backware/gta6-blocker/main/README.md': true,
+    'https://codeload.github.com/Backware/gta6-blocker/zip/refs/heads/main': true,
+    'https://github.com/Backware/gta6-blocker-fork': false,
+    'https://github.com/someone/gta6-blocker': false,
+    'https://evil.example/Backware/gta6-blocker': false
+  };
+  for (const [u, want] of Object.entries(urls)) {
+    check('isProjectUrl ' + u + ' = ' + want, (await sw.evaluate((x) => globalThis.GTA6.isProjectUrl(x), u)) === want);
+  }
+  const githubPage = fs.readFileSync(path.join(__dirname, 'github.html'));
+  await page.route(/^https:\/\/(github\.com|raw\.githubusercontent\.com)\//, (route) =>
+    route.fulfill({ contentType: 'text/html', body: githubPage }));
+  const isBlocked = () => page.evaluate(() => document.documentElement.hasAttribute('data-gta6-page-blocked'));
+  for (const u of ['https://github.com/Backware/gta6-blocker', 'https://github.com/Backware/gta6-blocker/issues?q=gta+6',
+    'https://raw.githubusercontent.com/Backware/gta6-blocker/main/README.md']) {
+    await page.goto(u).catch(() => {});
+    await page.waitForTimeout(600);
+    check('github exception: not redirected ' + u, page.url() === u);
+    check('github exception: page not blocked ' + u, !(await isBlocked()));
+    check('github exception: nothing hidden ' + u, (await page.$$('[data-gta6-blocked]')).length === 0);
+  }
+  // Control: any other GTA repo is still blocked.
+  await page.goto('https://github.com/someone/gta6-mods').catch(() => {});
+  await page.waitForTimeout(500);
+  check('github: other GTA repo redirected', page.url().endsWith('/blocked/blocked.html'));
+  // Navigating away from the repo inside GitHub (no reload) turns blocking back on.
+  await page.goto('https://github.com/Backware/gta6-blocker');
+  await page.waitForTimeout(500);
+  await page.evaluate(() => {
+    history.pushState({}, '', '/someone/gta6-mods');
+    document.title = 'someone/gta6-mods';
+  });
+  await page.waitForTimeout(800);
+  check('github: leaving the repo via SPA navigation blocks again', await isBlocked());
+  await page.unrouteAll();
+
   // Turn off and confirm content comes back.
   await sw.evaluate(() => chrome.storage.local.set({ enabled: false }));
   await page.waitForTimeout(300);

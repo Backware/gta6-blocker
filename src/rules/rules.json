@@ -224,5 +224,65 @@
         "sub_frame"
       ]
     }
+  },
+  {
+    "id": 100,
+    "priority": 100,
+    "action": {
+      "type": "allow"
+    },
+    "condition": {
+      "regexFilter": "^https?://(www\\.)?github\\.com/backware/gta6-blocker(\\.git)?([/?#]|$)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 101,
+    "priority": 100,
+    "action": {
+      "type": "allow"
+    },
+    "condition": {
+      "regexFilter": "^https?://(raw\\.githubusercontent\\.com|codeload\\.github\\.com)/backware/gta6-blocker/",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 102,
+    "priority": 100,
+    "action": {
+      "type": "allow"
+    },
+    "condition": {
+      "regexFilter": "^https?://backware\\.github\\.io/gta6-blocker([/?#]|$)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 103,
+    "priority": 100,
+    "action": {
+      "type": "allow"
+    },
+    "condition": {
+      "regexFilter": "^https://(objects|release-assets)\\.githubusercontent\\.com/.*filename(%3d|=)gta6-blocker",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
   }
 ]

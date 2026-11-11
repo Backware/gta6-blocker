@@ -13,7 +13,7 @@
   if (window.__gta6BlockerLoaded) return;
   window.__gta6BlockerLoaded = true;
 
-  const { ext, buildMatcher, isAllowlisted, getSettings } = globalThis.GTA6;
+  const { ext, buildMatcher, isAllowlisted, isProjectUrl, getSettings } = globalThis.GTA6;
   const isTopFrame = window.top === window;
 
   // Site-specific "cards": when a match is found inside one of these, the
@@ -79,6 +79,9 @@
 
   let matcher = null;
   let enabled = false;
+  // True on the extension's own GitHub repo, which is never blocked (see
+  // isProjectUrl in shared.js). Re-checked on every SPA navigation.
+  let exempt = false;
   let blockedCount = 0;
   let pageBlocked = false;
   let overlayHost = null;
@@ -261,7 +264,7 @@
   }
 
   function scan(root) {
-    if (!enabled || pageBlocked || !matcher) return;
+    if (!enabled || exempt || pageBlocked || !matcher) return;
     scanText(root);
     scanAttributes(root);
     // Open shadow roots (Reddit, some YouTube parts).
@@ -360,10 +363,29 @@
 
   function checkPage() {
     if (!enabled) return;
+    if (exempt) {
+      if (pageBlocked) unblockPage();
+      return;
+    }
     if (pageShouldBlock()) blockPage();
     else if (pageBlocked) {
       unblockPage();
       scan(document.documentElement);
+    }
+  }
+
+  /** Entering the project's repo: show everything. Leaving it: scan again. */
+  function updateExempt() {
+    const now = isProjectUrl(location.href);
+    if (now === exempt) return;
+    exempt = now;
+    if (exempt) {
+      clearMarks();
+      unblockPage();
+      blockedCount = 0;
+      reportCount();
+    } else {
+      pendingRoots.add(document.documentElement);
     }
   }
 
@@ -386,6 +408,7 @@
     if (location.href !== lastUrl || document.title !== lastTitle) {
       lastUrl = location.href;
       lastTitle = document.title;
+      updateExempt();
       checkPage();
     }
     if (pageBlocked) { pendingRoots.clear(); return; }
@@ -444,6 +467,7 @@
     const allowed = isAllowlisted(location.hostname, s.allowlist);
     const wasEnabled = enabled;
     enabled = !!s.enabled && !allowed;
+    exempt = isProjectUrl(location.href);
     matcher = buildMatcher(s.keywords);
 
     if (!enabled) {

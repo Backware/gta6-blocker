@@ -88,6 +88,35 @@
     });
   }
 
+  // The extension's own repository is never blocked, whatever the settings
+  // say: its name, README and issues are full of "GTA 6", but you need to be
+  // able to read the docs, file issues and download releases. Hardcoded on
+  // purpose so it can't be removed from the settings page.
+  // Keep in sync with the "allow" rules (ids 100-102) in rules/rules.json.
+  const PROJECT_OWNER = 'backware';
+  const PROJECT_REPO = 'gta6-blocker';
+
+  function isProjectUrl(href) {
+    let u;
+    try {
+      u = new URL(String(href || ''));
+    } catch (e) {
+      return false;
+    }
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+    const host = u.hostname.toLowerCase();
+    const parts = u.pathname.toLowerCase().split('/').filter(Boolean);
+    const repo = (parts[1] || '').replace(/\.git$/, '');
+    const isRepoPath = parts[0] === PROJECT_OWNER && repo === PROJECT_REPO;
+    // github.com/Backware/gta6-blocker and every page below it (code, issues,
+    // pull requests, releases, wiki, ...), plus raw files and zip downloads.
+    if (host === 'github.com' || host === 'www.github.com') return isRepoPath;
+    if (host === 'raw.githubusercontent.com' || host === 'codeload.github.com') return isRepoPath;
+    // GitHub Pages site of the repo, if one is ever published.
+    if (host === PROJECT_OWNER + '.github.io') return parts[0] === PROJECT_REPO;
+    return false;
+  }
+
   async function getSettings() {
     const stored = await ext.storage.local.get(DEFAULT_SETTINGS);
     return Object.assign({}, DEFAULT_SETTINGS, stored);
@@ -104,6 +133,7 @@
     buildMatcher,
     normalizeHost,
     isAllowlisted,
+    isProjectUrl,
     getSettings,
     setSettings
   };
