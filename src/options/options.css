@@ -9,3 +9,5 @@ small, .hint { color: var(--muted); }
 .hint { margin: 0 0 10px; font-size: 13px; }
 .actions { display: flex; align-items: center; gap: 12px; }
 #status { flex: 1; text-align: right; color: var(--muted); }
+.choice { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; cursor: pointer; }
+.choice input { margin: 4px 0 0; accent-color: var(--accent); flex: none; }

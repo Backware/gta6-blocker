@@ -40,6 +40,9 @@
     networkBlocking: true,
     keywords: DEFAULT_KEYWORDS,
     allowlist: [],
+    // Twitch GTA streams: 'warn' = mark red + warning before opening,
+    // 'hide' = remove them completely.
+    twitchMode: 'warn',
     blockedTotal: 0
   };
 

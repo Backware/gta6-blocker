@@ -10,6 +10,8 @@
     $('networkBlocking').checked = s.networkBlocking;
     $('keywords').value = (s.keywords || []).join('\n');
     $('allowlist').value = (s.allowlist || []).join('\n');
+    const mode = s.twitchMode === 'hide' ? 'hide' : 'warn';
+    document.querySelector('input[name="twitchMode"][value="' + mode + '"]').checked = true;
   }
 
   function flash(msg) {
@@ -20,6 +22,9 @@
 
   $('enabled').addEventListener('change', (e) => setSettings({ enabled: e.target.checked }).then(() => flash('Saved')));
   $('networkBlocking').addEventListener('change', (e) => setSettings({ networkBlocking: e.target.checked }).then(() => flash('Saved')));
+
+  document.querySelectorAll('input[name="twitchMode"]').forEach((r) =>
+    r.addEventListener('change', (e) => setSettings({ twitchMode: e.target.value }).then(() => flash('Saved'))));
 
   $('save').addEventListener('click', async () => {
     const keywords = lines($('keywords').value);

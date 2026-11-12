@@ -63,7 +63,7 @@
     'div[data-e2e="recommend-list-item-container"]', 'article[data-e2e="recommend-list-item-container"]',
     'div[data-e2e="feed-video"]', 'section[data-e2e="feed-video"]'
   ].join(',');
-  const BLOCKED_SEL = '[data-gta6-blocked],[data-gta6-covered]';
+  const BLOCKED_SEL = '[data-gta6-blocked],[data-gta6-covered],[data-gta6-flagged]';
 
   function isSnapFeed() {
     const h = location.hostname;
@@ -122,6 +122,11 @@
   // True on the extension's own GitHub repo, which is never blocked (see
   // isProjectUrl in shared.js). Re-checked on every SPA navigation.
   let exempt = false;
+  // Twitch: 'warn' marks GTA streams red and warns before one is opened,
+  // 'hide' removes them completely (settings page).
+  let twitchMode = 'warn';
+  let warnHost = null;
+  let warnTimer = null;
   let blockedCount = 0;
   let pageBlocked = false;
   let overlayHost = null;
@@ -228,6 +233,14 @@
 
   function hide(el) {
     if (!el || el.nodeType !== 1 || el.closest(BLOCKED_SEL) || isEditable(el)) return;
+    if (isTwitch() && twitchMode === 'warn') {
+      const target = containerFor(el);
+      if (!target || target.contains(warnHost)) return;
+      target.setAttribute('data-gta6-flagged', '');
+      blockedCount++;
+      reportCount();
+      return;
+    }
     if (isSnapFeed()) {
       const player = playerFor(el);
       if (player) {
@@ -313,7 +326,7 @@
     // Open shadow roots (Reddit, some YouTube parts).
     if (root.querySelectorAll) {
       root.querySelectorAll('*').forEach((el) => {
-        if (el.shadowRoot && !el.shadowRoot.__gta6Observed) {
+        if (el.shadowRoot && el !== warnHost && !el.shadowRoot.__gta6Observed) {
           el.shadowRoot.__gta6Observed = true;
           scanText(el.shadowRoot);
           scanAttributes(el.shadowRoot);
@@ -329,7 +342,7 @@
     if (urlMatches(location.href)) return true;
     // Swipe feeds change the title per video; items are covered one by one instead.
     if (isSnapFeed()) return false;
-    if (twitchStreamIsGta()) return true;
+    if (twitchMode === 'hide' && twitchStreamIsGta()) return true;
     if (matches(document.title)) return true;
     const og = document.querySelector('meta[property="og:title"], meta[name="twitter:title"]');
     if (og && matches(og.getAttribute('content'))) return true;
@@ -408,12 +421,147 @@
     reportCount();
   }
 
+  // ---------- Twitch warning (twitchMode 'warn') ----------
+
+  const ALLOWED_KEY = 'gta6-twitch-allowed';
+
+  /** "shroud" for twitch.tv/shroud, "videos/123" for a VOD. */
+  function twitchChannelKey(pathname) {
+    const parts = String(pathname || '').toLowerCase().split('/').filter(Boolean);
+    return parts[0] === 'videos' ? parts.slice(0, 2).join('/') : (parts[0] || '');
+  }
+
+  function allowedChannels() {
+    try { return JSON.parse(sessionStorage.getItem(ALLOWED_KEY) || '[]'); } catch (e) { return []; }
+  }
+
+  function allowChannel(key) {
+    try {
+      const list = allowedChannels();
+      if (!list.includes(key)) sessionStorage.setItem(ALLOWED_KEY, JSON.stringify(list.concat(key)));
+    } catch (e) { /* storage blocked: warn again next time */ }
+  }
+
+  function isChannelAllowed(key) {
+    return allowedChannels().includes(key);
+  }
+
+  /** Is this link a Twitch channel or video page (not directory, search, ...)? */
+  function twitchStreamLink(a) {
+    let u;
+    try { u = new URL(a.getAttribute('href'), location.href); } catch (e) { return null; }
+    if (!/(^|\.)twitch\.tv$/.test(u.hostname)) return null;
+    if (/^\/(directory|search|settings|downloads|subscriptions|drops|inventory|wallet|prime|turbo|jobs|p)?(\/|$)/i.test(u.pathname)) return null;
+    return u;
+  }
+
+  /**
+   * Full-screen warning in front of a GTA stream. The player is paused and
+   * muted while it is shown. "Watch anyway" remembers the channel for this
+   * tab, then runs onContinue (or simply reveals the stream).
+   */
+  function showTwitchWarning(key, onContinue) {
+    if (warnHost && warnHost.isConnected) return;
+    warnHost = document.createElement('gta6-twitch-warning');
+    const shadow = warnHost.attachShadow({ mode: 'open' });
+    const iconUrl = ext.runtime.getURL('icons/icon-128.png');
+    shadow.innerHTML = `
+      <style>
+        :host { all: initial; }
+        .wrap { position: fixed; inset: 0; z-index: 2147483647; display: flex; align-items: center;
+          justify-content: center; background: rgba(15, 15, 20, .97); color: #f2f2f5;
+          box-shadow: inset 0 0 0 6px #e5484d;
+          font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .card { max-width: 460px; padding: 32px; text-align: center; }
+        img { width: 80px; height: 80px; }
+        h1 { font-size: 26px; margin: 16px 0 8px; color: #ff6b6f; }
+        p { color: #c4c4d0; margin: 0 0 24px; }
+        .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        button { font: inherit; padding: 10px 20px; border-radius: 10px; border: 0; cursor: pointer; font-weight: 600; }
+        #gta6-back { background: #e5484d; color: white; }
+        #gta6-back:hover { background: #f2555a; }
+        #gta6-continue { background: transparent; color: #c4c4d0; box-shadow: inset 0 0 0 1px #4a4a55; }
+        #gta6-continue:hover { color: #fff; }
+      </style>
+      <div class="wrap" role="alertdialog" aria-labelledby="t">
+        <div class="card">
+          <img src="${iconUrl}" alt="">
+          <h1 id="t">Warning: GTA stream</h1>
+          <p>This stream is playing Grand Theft Auto and may contain GTA 6 spoilers.</p>
+          <div class="buttons">
+            <button type="button" id="gta6-back">Go back</button>
+            <button type="button" id="gta6-continue">Watch anyway</button>
+          </div>
+        </div>
+      </div>`;
+    shadow.getElementById('gta6-back').addEventListener('click', () => {
+      if (onContinue) { hideTwitchWarning(); return; } // warned before navigating: just stay
+      if (history.length > 1) history.back();
+      else location.href = 'https://www.twitch.tv/';
+    });
+    shadow.getElementById('gta6-continue').addEventListener('click', () => {
+      allowChannel(key);
+      hideTwitchWarning();
+      if (onContinue) onContinue();
+    });
+    (document.body || document.documentElement).appendChild(warnHost);
+    if (!onContinue) {
+      // In front of the stream: keep the player paused until the user decides.
+      pauseAllMedia();
+      warnTimer = setInterval(() => {
+        pauseAllMedia();
+        if (warnHost && !warnHost.isConnected) (document.body || document.documentElement).appendChild(warnHost);
+      }, 400);
+    }
+  }
+
+  function hideTwitchWarning() {
+    clearInterval(warnTimer);
+    warnTimer = null;
+    if (warnHost) warnHost.remove();
+    warnHost = null;
+  }
+
+  /** Channel page in warn mode: red frame, plus the warning until the user continues. */
+  function updateTwitchStream() {
+    const html = document.documentElement;
+    const gta = enabled && !exempt && twitchMode === 'warn' && twitchStreamIsGta();
+    if (!gta) {
+      html.removeAttribute('data-gta6-gta-stream');
+      if (warnHost && !warnHost.__gta6Link) hideTwitchWarning();
+      return;
+    }
+    html.setAttribute('data-gta6-gta-stream', '');
+    const key = twitchChannelKey(location.pathname);
+    if (!isChannelAllowed(key)) showTwitchWarning(key, null);
+  }
+
+  // Warn before a flagged (red) stream is even opened.
+  document.addEventListener('click', (e) => {
+    if (!enabled || exempt || twitchMode !== 'warn' || !isTwitch()) return;
+    if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; // new tab: warned there
+    const t = e.target;
+    const a = t && t.closest && t.closest('a[href]');
+    if (!a || !a.closest('[data-gta6-flagged]')) return;
+    const u = twitchStreamLink(a);
+    if (!u) return;
+    const key = twitchChannelKey(u.pathname);
+    if (isChannelAllowed(key)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    hideTwitchWarning();
+    showTwitchWarning(key, () => location.assign(u.href));
+    warnHost.__gta6Link = true;
+  }, true);
+
   function checkPage() {
     if (!enabled) return;
     if (exempt) {
       if (pageBlocked) unblockPage();
+      updateTwitchStream();
       return;
     }
+    if (isTwitch()) updateTwitchStream();
     if (pageShouldBlock()) blockPage();
     else if (pageBlocked) {
       unblockPage();
@@ -438,6 +586,9 @@
 
   function clearMarks() {
     document.querySelectorAll('[data-gta6-blocked]').forEach((el) => el.removeAttribute('data-gta6-blocked'));
+    document.querySelectorAll('[data-gta6-flagged]').forEach((el) => el.removeAttribute('data-gta6-flagged'));
+    document.documentElement.removeAttribute('data-gta6-gta-stream');
+    hideTwitchWarning();
     document.querySelectorAll('[data-gta6-covered]').forEach((el) => el.removeAttribute('data-gta6-covered'));
   }
 
@@ -483,7 +634,7 @@
       for (const m of mutations) {
         if (m.type === 'childList') {
           m.addedNodes.forEach((n) => {
-            if (n.nodeType === 1 && n !== overlayHost) schedule(n);
+            if (n.nodeType === 1 && n !== overlayHost && n !== warnHost) schedule(n);
             else if (n.nodeType === 3 && n.parentElement) schedule(n.parentElement);
           });
           if (m.target.nodeName === 'TITLE' || m.target.nodeName === 'HEAD') schedule(document.documentElement);
@@ -520,6 +671,7 @@
     enabled = !!s.enabled && !allowed;
     exempt = isProjectUrl(location.href);
     matcher = buildMatcher(s.keywords);
+    twitchMode = s.twitchMode === 'hide' ? 'hide' : 'warn';
 
     if (!enabled) {
       stopObserver();
@@ -541,7 +693,7 @@
 
   ext.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
-    if (changes.enabled || changes.keywords || changes.allowlist) apply();
+    if (changes.enabled || changes.keywords || changes.allowlist || changes.twitchMode) apply();
   });
 
   ext.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
